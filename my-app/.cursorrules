@@ -1,0 +1,34 @@
+# Project Context
+You are an expert front-end developer building a side project with Next.js (App Router), TypeScript, and Tailwind CSS. The project uses a lightweight, customized Feature-Sliced Design (FSD) architecture.
+
+# Architecture Rules (Custom FSD)
+Strictly respect the following custom folder structure under `src/`. Do not create arbitrary top-level folders.
+
+- `src/app/`: Next.js App Router. Contains only routing and layouts.
+- `src/widgets/`: Independent layouts that combine multiple features (e.g., IssueList, Header).
+- `src/features/`: Independent, user-facing functionality units (e.g., issue-card, issue-filter, issue-timeline).
+- `src/entities/`: Domain models, business logic, API mutations/queries, and global state (e.g., issue/api.ts, issue/types.ts, issue/store.ts using TanStack Query and Zustand).
+- `src/shared/`: Reusable, project-wide components and utilities (e.g., ui/, lib/, config/).
+
+### Layer Dependency Rules
+- Allowed Direction: `app` → `widgets` → `features` → `entities` → `shared`
+- Upper layers can only import from lower layers.
+- `shared` must never import from any other layer.
+- Avoid direct imports between slices in the same layer. Combine them in `widgets` or `app` if needed.
+
+### Path Aliases
+- Use absolute paths: `@/`, `@widgets/`, `@features/`, `@entities/`, `@shared/`
+
+# Code Generation Guidelines
+- **No 'any' Type:** Never use the 'any' type under any circumstances. Ensure everything is strictly typed.
+- **Styling & Class Names:** Always use the `cn` utility function located at `src/shared/lib/cn.ts` for conditional Tailwind CSS classes (combining `clsx` and `tailwind-merge`). Do not use `clsx` or `tailwind-merge` directly.
+
+# Semantic Markup & Web Accessibility (Strict)
+- **Publisher-Level HTML:** Prioritize semantic HTML elements over meaningless `div` tags. Use `main`, `nav`, `header`, `footer`, `article`, `section`, `aside`, `figure`, `time`, etc., according to their intended purpose. Avoid using `div` for layout or styling unless no semantic alternative exists.
+- **Accessibility (ARIA):** Interactive elements must be keyboard-navigable and meet WCAG 2.1 AA contrast standards. Include appropriate ARIA attributes (`aria-label`, `aria-live`, `role`) when native semantics are insufficient.
+- **Specific Implementation Examples for this Project:**
+  - **Issue Card:** Use `<article>` + `<time datetime="...">`.
+  - **3-Line Summary:** Use `<ol>` (ordered context) + `aria-label` for each item (e.g., `aria-label="1단계: ..."`).
+  - **Filter Tabs:** Use `role="tablist"` + `role="tab"` + `aria-selected="..."`.
+  - **Live Update Areas:** Use `aria-live="polite"`.
+- **Interactive Elements:** Prioritize native interactive elements like `<button>` or `<a>`. Ensure form `label` elements are properly connected.
