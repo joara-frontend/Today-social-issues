@@ -20,15 +20,15 @@ Strictly respect the following custom folder structure under `src/`. Do not crea
 - Use absolute paths: `@/`, `@widgets/`, `@features/`, `@entities/`, `@shared/`
 
 # Code Generation Guidelines
-- **No 'any' Type:** Never use the 'any' type under any circumstances. Ensure everything is strictly typed.
-- **Styling & Class Names:** Always use the `cn` utility function located at `src/shared/lib/cn.ts` for conditional Tailwind CSS classes (combining `clsx` and `tailwind-merge`). Do not use `clsx` or `tailwind-merge` directly.
+- No 'any' Type: Never use the 'any' type under any circumstances. Ensure everything is strictly typed.
+- Styling & Class Names: Always use the `cn` utility function located at `src/shared/lib/cn.ts` for conditional Tailwind CSS classes (combining `clsx` and `tailwind-merge`). Do not use `clsx` or `tailwind-merge` directly.
 
 # Semantic Markup & Web Accessibility (Strict)
-- **Publisher-Level HTML:** Prioritize semantic HTML elements over meaningless `div` tags. Use `main`, `nav`, `header`, `footer`, `article`, `section`, `aside`, `figure`, `time`, etc., according to their intended purpose. Avoid using `div` for layout or styling unless no semantic alternative exists.
-- **Accessibility (ARIA):** Interactive elements must be keyboard-navigable and meet WCAG 2.1 AA contrast standards. Include appropriate ARIA attributes (`aria-label`, `aria-live`, `role`) when native semantics are insufficient.
-- **Specific Implementation Examples for this Project:**
-  - **Issue Card:** Use `<article>` + `<time datetime="...">`.
-  - **3-Line Summary:** Use `<ol>` (ordered context) + `aria-label` for each item (e.g., `aria-label="1단계: ..."`).
-  - **Filter Tabs:** Use `role="tablist"` + `role="tab"` + `aria-selected="..."`.
-  - **Live Update Areas:** Use `aria-live="polite"`.
-- **Interactive Elements:** Prioritize native interactive elements like `<button>` or `<a>`. Ensure form `label` elements are properly connected.
+- Publisher-Level HTML: Prioritize semantic HTML elements over meaningless `div` tags. Use `main`, `nav`, `header`, `footer`, `article`, `section`, `aside`, `figure`, `time`, etc., according to their intended purpose. Avoid using `div` for layout or styling unless no semantic alternative exists.
+- Accessibility (ARIA): Interactive elements must be keyboard-navigable and meet WCAG 2.1 AA contrast standards. Include appropriate ARIA attributes (`aria-label`, `aria-live`, `role`) when native semantics are insufficient.
+- Specific Implementation Examples for this Project:
+  - Issue Card: Use `<article>` + `<time datetime="...">`.
+  - 3-Line Summary: Use `<ol>` (ordered context) + `aria-label` for each item (e.g., `aria-label="1단계: ..."`).
+  - Filter Tabs: Use `role="tablist"` + `role="tab"` + `aria-selected="..."`.
+  - Live Update Areas: Use `aria-live="polite"`.
+- Interactive Elements: Prioritize native interactive elements like `<button>` or `<a>`. Ensure form `label` elements are properly connected.
