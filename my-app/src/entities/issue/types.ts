@@ -1,7 +1,7 @@
 export interface Issue {
-  id: string;
+  id: number;
   title: string;
-  summary?: string;
-  category?: string;
-  publishedAt?: string;
+  summary: string;
+  date: string;
+  imageId: string;
 }

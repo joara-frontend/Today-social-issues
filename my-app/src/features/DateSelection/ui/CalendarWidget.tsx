@@ -3,7 +3,6 @@
 import * as React from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { DayPicker } from "react-day-picker";
-
 import { cn } from "@shared/lib/cn";
 import { buttonVariants } from "@shared/ui/button";
 
@@ -25,11 +24,11 @@ export default function CalendarWidget({
         nav: "flex items-center gap-1",
         button_previous: cn(
           buttonVariants({ variant: "outline" }),
-          "absolute left-1 size-7 bg-transparent p-0 opacity-50 hover:opacity-100",
+          "absolute top-3 left-1 size-7 bg-transparent p-0 opacity-50 hover:opacity-100",
         ),
         button_next: cn(
           buttonVariants({ variant: "outline" }),
-          "absolute right-1 size-7 bg-transparent p-0 opacity-50 hover:opacity-100",
+          "absolute top-3 right-1 size-7 bg-transparent p-0 opacity-50 hover:opacity-100",
         ),
         month_grid: "w-full border-collapse space-x-1",
         weekdays: "flex",
