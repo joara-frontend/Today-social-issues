@@ -1,4 +1,4 @@
--- 이슈픽 (IssuePick) issues table
+-- 도토리 (Dotori) issues table
 create table if not exists public.issues (
   id uuid primary key default gen_random_uuid(),
   title text not null,

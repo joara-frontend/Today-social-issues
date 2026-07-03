@@ -23,7 +23,7 @@ export async function summarizeIssue(
   title: string,
   categoryLabel: string
 ): Promise<ThreeLineSummary> {
-  const prompt = `너는 뉴스 큐레이션 서비스 "이슈픽"의 에디터야. 아래 기사 제목만 보고, 이 이슈를 잘 모르는 20~30대 독자에게 아래 3가지 포인트를 각각 한 문장으로 설명해줘.
+  const prompt = `너는 뉴스 큐레이션 서비스 "도토리"의 에디터야. 아래 기사 제목만 보고, 이 이슈를 잘 모르는 20~30대 독자에게 아래 3가지 포인트를 각각 한 문장으로 설명해줘.
 - summary_1: 무슨 일이 있었는지
 - summary_2: 왜 화제/논란이 되고 있는지
 - summary_3: 앞으로 어떻게 전개될지 전망

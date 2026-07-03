@@ -54,4 +54,4 @@ export const CATEGORY_MAP: Record<CategoryKey, CategoryConfig> =
 
 export const ISSUES_PER_CATEGORY_PER_DAY = 3;
 
-export const SITE_NAME = "이슈픽";
+export const SITE_NAME = "도토리";
