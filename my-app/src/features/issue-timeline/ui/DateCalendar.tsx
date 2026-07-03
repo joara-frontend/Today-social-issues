@@ -2,7 +2,11 @@
 
 import { useState } from "react";
 import { useIssueUIStore } from "@/entities/issue/store";
-import { toDateStr, formatDateShort } from "@/shared/lib/formatDate";
+import {
+  toDateStr,
+  formatDateShort,
+  todayDateStr,
+} from "@/shared/lib/formatDate";
 import { cn } from "@/shared/lib/cn";
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
@@ -128,15 +132,19 @@ export function DateCalendar() {
               }
               const dateStr = toDateStr(viewYear, viewMonthIdx, d);
               const isSelected = dateStr === selectedDate;
+              const isFuture = dateStr > todayDateStr();
               return (
                 <button
                   key={i}
-                  onClick={() => setSelectedDate(dateStr)}
+                  onClick={() => !isFuture && setSelectedDate(dateStr)}
+                  disabled={isFuture}
                   className={cn(
                     "text-text-primary duration-fast h-8 cursor-pointer rounded-sm text-xs font-normal transition-colors",
                     isSelected
                       ? "bg-brand font-bold text-white"
-                      : "hover:bg-border-soft bg-transparent"
+                      : "hover:bg-border-soft bg-transparent",
+                    isFuture &&
+                      "text-text-placeholder cursor-not-allowed hover:bg-transparent"
                   )}
                 >
                   {d}
