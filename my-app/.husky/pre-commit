@@ -1,0 +1,3 @@
+#!/bin/sh
+cd my-app
+npx lint-staged
