@@ -16,28 +16,18 @@ interface IssueUIState {
   jumpToResult: (date: string, category: CategoryKey) => void;
 }
 
-export const useIssueUIStore = create<IssueUIState>((set) => ({
+// TODO: 직접 구현 — Zustand 스토어 액션 로직
+
+export const useIssueUIStore = create<IssueUIState>(() => ({
   selectedDate: todayDateStr(),
   selectedCategory: "society",
   calendarOpen: false,
   searchOpen: false,
   searchQuery: "",
-  setSelectedDate: (date) => set({ selectedDate: date, calendarOpen: false }),
-  setSelectedCategory: (category) => set({ selectedCategory: category }),
-  toggleCalendar: () =>
-    set((s) => ({ calendarOpen: !s.calendarOpen, searchOpen: false })),
-  toggleSearch: () =>
-    set((s) => ({
-      searchOpen: !s.searchOpen,
-      calendarOpen: false,
-      searchQuery: s.searchOpen ? "" : s.searchQuery,
-    })),
-  setSearchQuery: (query) => set({ searchQuery: query }),
-  jumpToResult: (date, category) =>
-    set({
-      selectedDate: date,
-      selectedCategory: category,
-      searchOpen: false,
-      searchQuery: "",
-    }),
+  setSelectedDate: () => {},
+  setSelectedCategory: () => {},
+  toggleCalendar: () => {},
+  toggleSearch: () => {},
+  setSearchQuery: () => {},
+  jumpToResult: () => {},
 }));

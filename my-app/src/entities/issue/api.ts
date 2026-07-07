@@ -1,48 +1,22 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/shared/config/supabase";
 import type { CategoryKey } from "@/shared/config";
 import type { Issue } from "./types";
 
+// TODO: 직접 구현 — Supabase 조회 로직
+
 export async function fetchIssuesByDate(date: string): Promise<Issue[]> {
-  if (!supabase) return [];
-
-  const { data, error } = await supabase
-    .from("issues")
-    .select("*")
-    .eq("published_at", date)
-    .order("category", { ascending: true })
-    .order("created_at", { ascending: true });
-
-  if (error) throw error;
-  return data ?? [];
+  void date;
+  return [];
 }
 
 export async function fetchIssueById(id: string): Promise<Issue | null> {
-  if (!supabase) return null;
-
-  const { data, error } = await supabase
-    .from("issues")
-    .select("*")
-    .eq("id", id)
-    .maybeSingle();
-
-  if (error) throw error;
-  return data;
+  void id;
+  return null;
 }
 
 export async function searchIssues(query: string): Promise<Issue[]> {
-  const trimmed = query.trim();
-  if (!trimmed || !supabase) return [];
-
-  const { data, error } = await supabase
-    .from("issues")
-    .select("*")
-    .ilike("title", `%${trimmed}%`)
-    .order("published_at", { ascending: false })
-    .limit(8);
-
-  if (error) throw error;
-  return data ?? [];
+  void query;
+  return [];
 }
 
 export function useIssuesByDate(date: string, initialData?: Issue[]) {
