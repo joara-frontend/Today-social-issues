@@ -25,8 +25,17 @@ export const useIssueUIStore = create<IssueUIState>((set) => ({
   setSelectedDate: (date) => set({ selectedDate: date, calendarOpen: false }),
   setSelectedCategory: (category) => set({ selectedCategory: category }),
   toggleCalendar: () => set((state) => ({ calendarOpen: !state.calendarOpen })),
-  toggleSearch: () => set((state) => ({ searchOpen: !state.searchOpen })),
+  toggleSearch: () =>
+    set((state) => ({
+      searchOpen: !state.searchOpen,
+      searchQuery: state.searchOpen ? "" : state.searchQuery,
+    })),
   setSearchQuery: (query) => set({ searchQuery: query }),
   jumpToResult: (date, category) =>
-    set({ selectedDate: date, selectedCategory: category }),
+    set({
+      selectedDate: date,
+      selectedCategory: category,
+      searchOpen: false,
+      searchQuery: "",
+    }),
 }));

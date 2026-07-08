@@ -1,3 +1,5 @@
+import Parser from "rss-parser";
+
 export interface RssItem {
   title: string;
   link: string;
@@ -5,13 +7,24 @@ export interface RssItem {
   publishedAt: Date;
 }
 
-// TODO: 직접 구현 — Google News RSS 검색 결과에서 title/link/date 추출
-
 export async function fetchCategoryFeed(
   query: string,
   limit?: number
 ): Promise<RssItem[]> {
-  void query;
-  void limit;
-  return [];
+  const parser = new Parser();
+  const url = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=ko&gl=KR&ceid=KR:ko`;
+
+  try {
+    const feed = await parser.parseURL(url);
+    const items: RssItem[] = feed.items.slice(0, limit).map((item) => ({
+      title: item.title || "",
+      link: item.link || "",
+      sourceName: item.source?.name || "",
+      publishedAt: item.pubDate ? new Date(item.pubDate) : new Date(),
+    }));
+    return items;
+  } catch (error) {
+    console.error("Error fetching RSS feed:", error);
+    return [];
+  }
 }
