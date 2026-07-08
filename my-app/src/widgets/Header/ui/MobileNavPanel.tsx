@@ -1,12 +1,45 @@
 "use client";
 
+import { CATEGORIES } from "@/shared/config";
+import { useIssueUIStore } from "@/entities/issue/store";
+import { DateCalendar } from "@/features/issue-timeline";
+import { cn } from "@/shared/lib/cn";
+
 interface MobileNavPanelProps {
   onClose: () => void;
 }
 
-// TODO: 직접 구현 — 모바일 내비게이션 패널 UI
-
 export function MobileNavPanel({ onClose }: MobileNavPanelProps) {
-  void onClose;
-  return <div>TODO: 직접 구현 — MobileNavPanel</div>;
+  const selectedCategory = useIssueUIStore((s) => s.selectedCategory);
+  const setSelectedCategory = useIssueUIStore((s) => s.setSelectedCategory);
+
+  return (
+    <div className="border-border bg-bg border-b px-4 pt-2 pb-5 md:hidden">
+      <div className="mb-4">
+        <DateCalendar />
+      </div>
+      <nav className="flex flex-col gap-1">
+        {CATEGORIES.map((cat) => {
+          const isActive = cat.key === selectedCategory;
+          return (
+            <button
+              key={cat.key}
+              onClick={() => {
+                setSelectedCategory(cat.key);
+                onClose();
+              }}
+              className={cn(
+                "text-md duration-base cursor-pointer rounded-sm px-3 py-3 text-left font-semibold transition-colors",
+                isActive
+                  ? cn(cat.tintBgClass, cat.textClass)
+                  : "text-text-secondary"
+              )}
+            >
+              {cat.label}
+            </button>
+          );
+        })}
+      </nav>
+    </div>
+  );
 }
