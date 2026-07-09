@@ -1,22 +1,65 @@
+import { supabase } from "@/shared/config/supabase";
 import { useQuery } from "@tanstack/react-query";
 import type { CategoryKey } from "@/shared/config";
 import type { Issue } from "./types";
 
-// TODO: 직접 구현 — Supabase 조회 로직
-
 export async function fetchIssuesByDate(date: string): Promise<Issue[]> {
-  void date;
-  return [];
+  if (!supabase) return [];
+
+  const { data, error } = await supabase
+    .from("issues")
+    .select("*")
+    .eq("published_at", date)
+    .order("published_at", { ascending: false });
+
+  if (error) {
+    console.error("Error fetching issues by date:", error);
+    return [];
+  }
+
+  return data;
 }
 
 export async function fetchIssueById(id: string): Promise<Issue | null> {
-  void id;
-  return null;
+  if (!supabase) return null;
+
+  const { data, error } = await supabase
+    .from("issues")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Error fetching issue by ID:", error);
+    return null;
+  }
+
+  return data;
+}
+
+function sanitizeSearchQuery(query: string) {
+  return query.trim().replace(/[,%_()]/g, "");
 }
 
 export async function searchIssues(query: string): Promise<Issue[]> {
-  void query;
-  return [];
+  if (!supabase) return [];
+
+  const sanitized = sanitizeSearchQuery(query);
+  if (!sanitized) return [];
+
+  const { data, error } = await supabase
+    .from("issues")
+    .select("*")
+    .or(
+      `title.ilike.%${sanitized}%,summary_1.ilike.%${sanitized}%,summary_2.ilike.%${sanitized}%,summary_3.ilike.%${sanitized}%`
+    );
+
+  if (error) {
+    console.error("Error searching issues:", error);
+    return [];
+  }
+
+  return data;
 }
 
 export function useIssuesByDate(date: string, initialData?: Issue[]) {

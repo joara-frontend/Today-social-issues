@@ -1,6 +1,6 @@
 import type { CategoryKey } from "@/shared/config";
 
-export interface Issue {
+export type Issue = {
   id: string;
   title: string;
   summary_1: string;
@@ -11,7 +11,7 @@ export interface Issue {
   source_name: string;
   published_at: string;
   created_at: string;
-}
+};
 
 export type IssueInsert = Omit<Issue, "id" | "created_at">;
 
