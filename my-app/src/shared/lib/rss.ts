@@ -7,6 +7,19 @@ export interface RssItem {
   publishedAt: Date;
 }
 
+function splitTitleAndSource(RssTitle: string): {
+  title: string;
+  sourceName: string;
+} {
+  const targetIndex = RssTitle.lastIndexOf("-");
+  const title = RssTitle.substring(0, targetIndex).trim();
+  const sourceName = RssTitle.substring(targetIndex + 1).trim();
+  if (targetIndex === -1) {
+    return { title: RssTitle.trim(), sourceName: "" };
+  }
+  return { title, sourceName };
+}
+
 export async function fetchCategoryFeed(
   query: string,
   limit?: number
@@ -16,12 +29,15 @@ export async function fetchCategoryFeed(
 
   try {
     const feed = await parser.parseURL(url);
-    const items: RssItem[] = feed.items.slice(0, limit).map((item) => ({
-      title: item.title || "",
-      link: item.link || "",
-      sourceName: item.source?.name || "",
-      publishedAt: item.pubDate ? new Date(item.pubDate) : new Date(),
-    }));
+    const items: RssItem[] = feed.items.slice(0, limit).map((item) => {
+      const { title, sourceName } = splitTitleAndSource(item.title || "");
+      return {
+        title,
+        link: item.link || "",
+        sourceName,
+        publishedAt: item.pubDate ? new Date(item.pubDate) : new Date(),
+      };
+    });
     return items;
   } catch (error) {
     console.error("Error fetching RSS feed:", error);
