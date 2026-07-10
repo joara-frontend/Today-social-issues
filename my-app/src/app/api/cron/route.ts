@@ -1,4 +1,5 @@
 import { NextResponse, after } from "next/server";
+import { revalidatePath } from "next/cache";
 import { fetchCategoryFeed } from "@/shared/lib/rss";
 import type { NextRequest } from "next/server";
 import {
@@ -8,7 +9,7 @@ import {
 } from "@/shared/config";
 import { summarizeIssue } from "@/shared/lib/gemini";
 import { createSupabaseAdminClient } from "@/shared/config/supabase";
-import { toDateStr, todayDateStr } from "@/shared/lib/formatDate";
+import { todayDateStr } from "@/shared/lib/formatDate";
 import type { IssueInsert } from "@/entities/issue/types";
 import { clusterIssues } from "@/shared/lib/clusterIssues";
 
@@ -48,14 +49,20 @@ async function runCollection(
     }
   }
 
-  const { error } = await supabaseAdmin
+  const { data, error } = await supabaseAdmin
     .from("issues")
-    .upsert(rows, { onConflict: "source_url,published_at" });
+    .upsert(rows, { onConflict: "source_url,published_at" })
+    .select("id");
 
   if (error) {
     console.error("Upsert failed:", error);
     return;
   }
+
+  for (const row of data) {
+    revalidatePath(`/${row.id}`);
+  }
+  revalidatePath("/");
 
   console.log(`Cron collection inserted ${rows.length} issues`);
 }

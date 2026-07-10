@@ -3,8 +3,6 @@ import { IssueList } from "@/widgets/IssueList";
 import { todayDateStr } from "@/shared/lib/formatDate";
 import { SITE_NAME } from "@/shared/config";
 
-export const revalidate = 3600;
-
 export default async function HomePage() {
   const today = todayDateStr();
   const issues = await fetchIssuesByDate(today);
