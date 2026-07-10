@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { fetchCategoryFeed } from "@/shared/lib/rss";
 import type { NextRequest } from "next/server";
 import { CATEGORIES, ISSUES_PER_CATEGORY_PER_DAY } from "@/shared/config";
@@ -9,20 +9,9 @@ import type { IssueInsert } from "@/entities/issue/types";
 
 export const maxDuration = 300;
 
-export async function GET(request: NextRequest) {
-  const authHeader = request.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const supabaseAdmin = createSupabaseAdminClient();
-  if (!supabaseAdmin) {
-    return NextResponse.json(
-      { error: "Supabase not configured" },
-      { status: 500 }
-    );
-  }
-
+async function runCollection(
+  supabaseAdmin: NonNullable<ReturnType<typeof createSupabaseAdminClient>>
+) {
   const rows: IssueInsert[] = [];
   for (const category of CATEGORIES) {
     // items = 이 카테고리의 뉴스 기사 3개 (title, link, sourceName, publishedAt)
@@ -62,8 +51,30 @@ export async function GET(request: NextRequest) {
 
   if (error) {
     console.error("Upsert failed:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return;
   }
 
-  return NextResponse.json({ inserted: rows.length });
+  console.log(`Cron collection inserted ${rows.length} issues`);
+}
+
+export async function GET(request: NextRequest) {
+  const authHeader = request.headers.get("authorization");
+  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const supabaseAdmin = createSupabaseAdminClient();
+  if (!supabaseAdmin) {
+    return NextResponse.json(
+      { error: "Supabase not configured" },
+      { status: 500 }
+    );
+  }
+
+  // cron-job.org의 요청 타임아웃(무료 플랜 기준 30초)보다 수집 작업이
+  // 오래 걸리므로, 즉시 202를 응답하고 실제 수집/요약/저장은
+  // 응답 이후에도 계속 실행되도록 한다.
+  after(() => runCollection(supabaseAdmin));
+
+  return NextResponse.json({ status: "accepted" }, { status: 202 });
 }
