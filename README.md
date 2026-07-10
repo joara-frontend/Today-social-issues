@@ -4,13 +4,121 @@
 뉴스 요약 서비스입니다. (사회·시사 / 경제·금융 / 테크·AI / 컬처·트렌드, 카테고리당
 하루 3개 이슈)
 
+## 기술적으로 흥미로운 점
+
+### Jaccard 유사도 기반 이슈 클러스터링
+
+여러 언론사가 같은 사건을 다른 제목으로 보도해도 하나의 이슈로 묶고,
+`sourceCount`(보도 매체 수)로 "여러 매체가 다루는 진짜 이슈"를 가려낸다.
+클러스터가 커질수록 판단 기준이 느슨해지는 걸 막기 위해, 클러스터 전체가
+아니라 **클러스터를 시작한 첫 기사(앵커)의 토큰 집합**하고만 유사도를
+비교한다.
+
+→ [`src/shared/lib/clusterIssues.ts`](./my-app/src/shared/lib/clusterIssues.ts)
+
+### 서버리스 타임아웃을 넘는 백그라운드 작업
+
+cron-job.org 무료 플랜의 요청 타임아웃(30초)보다 RSS 수집 + Gemini 요약
+작업이 훨씬 오래 걸린다. `GET /api/cron`은 인증 후 바로 `202 Accepted`를
+응답하고, Next.js `after()`로 실제 수집/요약/저장은 응답 이후에도 계속
+실행되도록 넘긴다(`maxDuration = 300`).
+
+```ts
+after(() => runCollection(supabaseAdmin));
+return NextResponse.json({ status: "accepted" }, { status: 202 });
+```
+
+→ [`src/app/api/cron/route.ts`](./my-app/src/app/api/cron/route.ts)
+
+### 무료 AI API 레이트 리밋에 맞춘 순차 처리
+
+Gemini 2.5 Flash 무료 티어는 분당 5회 요청 제한이 있어, 요약 호출 사이에
+13초씩 대기한다. 기사 한 건의 요약이 실패해도 `try/catch`로 개별 처리해
+전체 파이프라인은 계속 진행된다.
+
+→ [`src/shared/lib/gemini.ts`](./my-app/src/shared/lib/gemini.ts)
+
+### 날짜 기준 멱등적 upsert
+
+`(source_url, published_at)` 유니크 제약으로 같은 기사·같은 날짜의 중복
+저장을 막으면서, 같은 기사가 다른 날짜에 다시 이슈가 되면 새 행으로
+취급한다. cron이 매일 같은 시각에 다시 실행돼도 안전하게 재실행 가능한
+구조.
+
+→ [`supabase/schema.sql`](./supabase/schema.sql)
+
+### 데이터가 바뀐 시점에만 캐시 무효화
+
+타이머 기반 재검증(ISR) 대신, cron이 실제로 이슈를 upsert한 직후에만
+`revalidatePath`로 홈(`/`)과 새로 갱신된 이슈 상세 페이지(`/[id]`)를
+무효화한다.
+
+→ [`src/app/api/cron/route.ts`](./my-app/src/app/api/cron/route.ts)
+
+### 백엔드 없이도 죽지 않는 설계
+
+Supabase 환경변수가 없으면 클라이언트를 에러 없이 `null`로 두고, 모든
+fetch 함수가 `if (!supabase) return ...` 가드로 시작한다. 덕분에 로컬에서
+Supabase를 세팅하지 않아도 UI 확인이 가능하다.
+
+→ [`src/shared/config/supabase.ts`](./my-app/src/shared/config/supabase.ts),
+[`src/entities/issue/api.ts`](./my-app/src/entities/issue/api.ts)
+
+### 저작권을 고려한 데이터 정책
+
+RSS에서 제목·링크·발행일·출처만 수집하고 기사 원문은 저장하지 않는다.
+Gemini 요약도 원문 없이 제목만으로 생성한다.
+
+→ [`src/shared/lib/rss.ts`](./my-app/src/shared/lib/rss.ts)
+
+### DB 레벨 읽기/쓰기 권한 분리 (RLS)
+
+anon 키에는 공개 읽기 정책만 허용하고, 쓰기는 서비스 롤 키로 `/api/cron`
+안에서만 수행한다.
+
+→ [`supabase/schema.sql`](./supabase/schema.sql)
+
+### 경량 FSD + 레이어별 CLAUDE.md 문서화
+
+`app → widgets → features → entities → shared` 단방향 의존성 규칙을
+레이어별 `CLAUDE.md`로 관리한다. 사람뿐 아니라 AI 협업 시에도 참고할 수
+있는 살아있는 아키텍처 문서다.
+
+→ [`my-app/CLAUDE.md`](./my-app/CLAUDE.md)
+
 ## 기술 스택
 
 Next.js 16 (App Router, Turbopack) · TypeScript (strict) · Tailwind CSS v4 ·
 TanStack Query v5 · Zustand · rss-parser · Gemini 2.5 Flash · Supabase
 (Postgres) · cron-job.org · Vercel
 
-## 로컬 개발 설정
+## 데이터 파이프라인
+
+```
+RSS 수집 → Jaccard 클러스터링 → Gemini 3줄 요약 → Supabase upsert → 변경분만 revalidate
+```
+
+카테고리별 검색어는
+[`src/shared/config/index.ts`](./my-app/src/shared/config/index.ts)의
+`rssQuery`에서 바꿀 수 있다.
+
+## 폴더 구조 (FSD 경량화)
+
+```
+src/
+├── app/                 # 라우팅 전용 (App Router)
+├── features/            # issue-card, issue-filter, issue-timeline
+├── entities/issue/      # 타입, TanStack Query 훅, Zustand 스토어
+├── shared/              # ui, lib, config (Supabase/Gemini/RSS 클라이언트 포함)
+└── widgets/              # Header, Footer, IssueList
+```
+
+## 로컬 실행 / 배포
+
+<details>
+<summary>펼치기</summary>
+
+### 로컬 개발 설정
 
 1. 의존성 설치
 
@@ -43,14 +151,6 @@ TanStack Query v5 · Zustand · rss-parser · Gemini 2.5 Flash · Supabase
 
    http://localhost:3000 에서 확인합니다.
 
-## 데이터 파이프라인
-
-`GET /api/cron`이 호출되면 카테고리별로 Google News RSS(제목/링크/날짜만 수집,
-원문 저장 없음)를 가져와 Gemini 2.5 Flash로 [무슨 일 / 왜 난리 / 앞으로 전망] 3줄
-요약을 생성한 뒤 Supabase `issues` 테이블에 upsert합니다. 카테고리별 검색어는
-[`src/shared/config/index.ts`](./src/shared/config/index.ts)의 `rssQuery`에서
-바꿀 수 있습니다.
-
 cron-job.org에서 매일 아침 아래처럼 호출하도록 등록하세요.
 
 - URL: `https://<your-domain>/api/cron`
@@ -62,24 +162,13 @@ cron-job.org에서 매일 아침 아래처럼 호출하도록 등록하세요.
 curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron
 ```
 
-## 폴더 구조 (FSD 경량화)
-
-```
-src/
-├── app/                 # 라우팅 전용 (App Router)
-├── features/            # issue-card, issue-filter, issue-timeline
-├── entities/issue/      # 타입, TanStack Query 훅, Zustand 스토어
-├── shared/              # ui, lib, config (Supabase/Gemini/RSS 클라이언트 포함)
-└── widgets/              # Header, Footer, IssueList
-```
-
-## Vercel 배포
+### Vercel 배포
 
 1. GitHub 저장소를 Vercel에 연결합니다.
 2. Vercel 프로젝트 설정 > Environment Variables에 위 5개 환경변수를 등록합니다.
 3. 배포 후 cron-job.org에 프로덕션 도메인의 `/api/cron`을 등록합니다.
 4. 홈/상세 페이지는 정적으로 캐시되며, 별도의 시간 기반 재검증(ISR) 없이
    [On-Demand Revalidation](https://nextjs.org/docs/app/guides/incremental-static-regeneration#on-demand-revalidation)만
-   사용합니다. `/api/cron`이 이슈를 upsert한 직후 홈(`/`)과 새로 추가/갱신된
-   이슈 상세 페이지(`/[id]`)를 `revalidatePath`로 무효화하므로, 캐시는 실제
-   데이터가 바뀐 시점에만 갱신됩니다.
+   사용합니다.
+
+</details>
