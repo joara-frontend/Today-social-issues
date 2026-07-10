@@ -1,11 +1,16 @@
 import { NextResponse, after } from "next/server";
 import { fetchCategoryFeed } from "@/shared/lib/rss";
 import type { NextRequest } from "next/server";
-import { CATEGORIES, ISSUES_PER_CATEGORY_PER_DAY } from "@/shared/config";
+import {
+  CATEGORIES,
+  ISSUES_PER_CATEGORY_PER_DAY,
+  RSS_POOL_SIZE_PER_CATEGORY,
+} from "@/shared/config";
 import { summarizeIssue } from "@/shared/lib/gemini";
 import { createSupabaseAdminClient } from "@/shared/config/supabase";
-import { toDateStr } from "@/shared/lib/formatDate";
+import { toDateStr, todayDateStr } from "@/shared/lib/formatDate";
 import type { IssueInsert } from "@/entities/issue/types";
+import { clusterIssues } from "@/shared/lib/clusterIssues";
 
 export const maxDuration = 300;
 
@@ -14,13 +19,15 @@ async function runCollection(
 ) {
   const rows: IssueInsert[] = [];
   for (const category of CATEGORIES) {
-    // items = 이 카테고리의 뉴스 기사 3개 (title, link, sourceName, publishedAt)
+    // items = 이 카테고리의 뉴스 기사 30개 (title, link, sourceName, publishedAt)
     const items = await fetchCategoryFeed(
       category.rssQuery,
-      ISSUES_PER_CATEGORY_PER_DAY
+      RSS_POOL_SIZE_PER_CATEGORY
     );
 
-    for (const item of items) {
+    const topIssues = clusterIssues(items, ISSUES_PER_CATEGORY_PER_DAY);
+
+    for (const item of topIssues) {
       // 기사 한 개씩 Gemini 요약
       try {
         const summary = await summarizeIssue(item.title, category.label);
@@ -32,11 +39,7 @@ async function runCollection(
           category: category.key,
           source_url: item.link,
           source_name: item.sourceName,
-          published_at: toDateStr(
-            item.publishedAt.getFullYear(),
-            item.publishedAt.getMonth(),
-            item.publishedAt.getDate()
-          ),
+          published_at: todayDateStr(),
         });
       } catch (error) {
         console.error(`Failed to summarize "${item.title}":`, error);

@@ -12,7 +12,7 @@ export async function fetchCategoryFeed(
   limit?: number
 ): Promise<RssItem[]> {
   const parser = new Parser();
-  const url = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=ko&gl=KR&ceid=KR:ko`;
+  const url = `https://news.google.com/rss/search?q=${encodeURIComponent(`${query} when:1d`)}&hl=ko&gl=KR&ceid=KR:ko`;
 
   try {
     const feed = await parser.parseURL(url);

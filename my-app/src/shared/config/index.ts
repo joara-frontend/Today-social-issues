@@ -53,5 +53,6 @@ export const CATEGORY_MAP: Record<CategoryKey, CategoryConfig> =
   >;
 
 export const ISSUES_PER_CATEGORY_PER_DAY = 3;
+export const RSS_POOL_SIZE_PER_CATEGORY = 30;
 
 export const SITE_NAME = "도토리";
