@@ -8,6 +8,7 @@ import {
   RSS_POOL_SIZE_PER_CATEGORY,
 } from "@/shared/config";
 import { summarizeIssue } from "@/shared/lib/gemini";
+import { ApiError } from "@google/genai";
 import { createSupabaseAdminClient } from "@/shared/config/supabase";
 import { todayDateStr } from "@/shared/lib/formatDate";
 import type { IssueInsert } from "@/entities/issue/types";
@@ -29,21 +30,39 @@ async function runCollection(
     const topIssues = clusterIssues(items, ISSUES_PER_CATEGORY_PER_DAY);
 
     for (const item of topIssues) {
-      // 기사 한 개씩 Gemini 요약
-      try {
-        const summary = await summarizeIssue(item.title, category.label);
-        rows.push({
-          title: item.title,
-          summary_1: summary.summary_1,
-          summary_2: summary.summary_2,
-          summary_3: summary.summary_3,
-          category: category.key,
-          source_url: item.link,
-          source_name: item.sourceName,
-          published_at: todayDateStr(),
-        });
-      } catch (error) {
-        console.error(`Failed to summarize "${item.title}":`, error);
+      // 기사 한 개씩 Gemini 요약. 500/502/503/429는 Gemini API의 일시적인
+      // 문제일 수 있으므로 3초 후 최대 2회까지 재시도한다.
+      const maxAttempts = 3;
+      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        try {
+          const summary = await summarizeIssue(item.title, category.label);
+          rows.push({
+            title: item.title,
+            summary_1: summary.summary_1,
+            summary_2: summary.summary_2,
+            summary_3: summary.summary_3,
+            category: category.key,
+            source_url: item.link,
+            source_name: item.sourceName,
+            published_at: todayDateStr(),
+          });
+          break;
+        } catch (error) {
+          const isRetryable =
+            error instanceof ApiError &&
+            [429, 500, 502, 503].includes(error.status);
+
+          if (!isRetryable || attempt === maxAttempts) {
+            console.error(`Failed to summarize "${item.title}":`, error);
+            break;
+          }
+
+          console.error(
+            `Retrying "${item.title}" after transient error (attempt ${attempt}):`,
+            error
+          );
+          await new Promise((resolve) => setTimeout(resolve, 3000));
+        }
       }
       await new Promise((resolve) => setTimeout(resolve, 13000)); // Gemini 2.5 Flash 무료 티어의 분당 요청 제한이 5회, 다음 호출까지 13초 대기
     }
