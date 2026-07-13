@@ -33,10 +33,17 @@ return NextResponse.json({ status: "accepted" }, { status: 202 });
 ### 무료 AI API 레이트 리밋에 맞춘 순차 처리
 
 Gemini 2.5 Flash 무료 티어는 분당 5회 요청 제한이 있어, 요약 호출 사이에
-13초씩 대기한다. 기사 한 건의 요약이 실패해도 `try/catch`로 개별 처리해
-전체 파이프라인은 계속 진행된다.
+13초씩 대기한다. 기사 한 건의 요약이 `ApiError`(429/500/502/503)로 실패하면
+일시적 오류로 보고 3초 대기 후 최대 2회까지 재시도하고, 그 외 실패는
+`try/catch`로 개별 처리해 전체 파이프라인은 계속 진행된다.
 
-→ [`src/shared/lib/gemini.ts`](./my-app/src/shared/lib/gemini.ts)
+> **알려진 제한사항**: 재시도는 429/500/502/503 같은 HTTP 상태 기반 오류에만
+> 적용된다. Gemini 응답의 JSON 파싱 실패 등 다른 원인이거나 재시도를 모두
+> 소진한 경우에는 해당 기사가 스킵되며, RSS 풀에서 대체 기사를 다시 채우지
+> 않으므로 카테고리당 3개 미만으로 저장될 수 있다.
+
+→ [`src/shared/lib/gemini.ts`](./my-app/src/shared/lib/gemini.ts),
+[`src/app/api/cron/route.ts`](./my-app/src/app/api/cron/route.ts)
 
 ### 날짜 기준 멱등적 upsert
 

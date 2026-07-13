@@ -6,7 +6,7 @@ import { Footer } from "@/widgets/Footer";
 import { SITE_NAME } from "@/shared/config";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://today-social-issues.vercel.app/"),
+  metadataBase: new URL("https://dotori-news.vercel.app/"),
   title: `${SITE_NAME} - 하루 3분, 오늘 진짜 이슈만`,
   description:
     "매일 아침, 사회·경제·테크·컬처 이슈를 AI가 3줄로 요약해 전해드려요.",
@@ -14,7 +14,7 @@ export const metadata: Metadata = {
     title: `${SITE_NAME} - 하루 3분, 오늘 진짜 이슈만`,
     description:
       "매일 아침, 사회·경제·테크·컬처 이슈를 AI가 3줄로 요약해 전해드려요.",
-    url: "https://today-social-issues.vercel.app/",
+    url: "https://dotori-news.vercel.app/",
     siteName: `${SITE_NAME}`,
     locale: "ko_KR",
     type: "website",
