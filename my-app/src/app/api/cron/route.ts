@@ -20,7 +20,9 @@ async function runCollection(
   supabaseAdmin: NonNullable<ReturnType<typeof createSupabaseAdminClient>>
 ) {
   const rows: IssueInsert[] = [];
+  let quotaExhausted = false;
   for (const category of CATEGORIES) {
+    if (quotaExhausted) break;
     // items = 이 카테고리의 뉴스 기사 30개 (title, link, sourceName, publishedAt)
     const items = await fetchCategoryFeed(
       category.rssQuery,
@@ -30,7 +32,8 @@ async function runCollection(
     const topIssues = clusterIssues(items, ISSUES_PER_CATEGORY_PER_DAY);
 
     for (const item of topIssues) {
-      // 기사 한 개씩 Gemini 요약. 500/502/503/429는 Gemini API의 일시적인
+      if (quotaExhausted) break;
+      // 기사 한 개씩 Gemini 요약. 500/502/503는 Gemini API의 일시적인
       // 문제일 수 있으므로 3초 후 최대 2회까지 재시도한다.
       const maxAttempts = 3;
       for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -49,8 +52,13 @@ async function runCollection(
           break;
         } catch (error) {
           const isRetryable =
-            error instanceof ApiError &&
-            [429, 500, 502, 503].includes(error.status);
+            error instanceof ApiError && [500, 502, 503].includes(error.status);
+
+          if (error instanceof ApiError && error.status === 429) {
+            console.error(`Quota exhausted, stopping collection early:`, error);
+            quotaExhausted = true;
+            break;
+          }
 
           if (!isRetryable || attempt === maxAttempts) {
             console.error(`Failed to summarize "${item.title}":`, error);
@@ -64,7 +72,11 @@ async function runCollection(
           await new Promise((resolve) => setTimeout(resolve, 3000));
         }
       }
-      await new Promise((resolve) => setTimeout(resolve, 13000)); // Gemini 2.5 Flash 무료 티어의 분당 요청 제한이 5회, 다음 호출까지 13초 대기
+
+      if (!quotaExhausted) {
+        // Gemini 2.5 Flash 무료 티어의 분당 요청 제한이 5회, 다음 호출까지 13초 대기
+        await new Promise((resolve) => setTimeout(resolve, 13000));
+      }
     }
   }
 

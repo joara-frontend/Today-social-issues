@@ -44,3 +44,4 @@ next-env.d.ts
 my-app/**/AGENTS.md
 my-app/**/CLAUDE.md
 /.claude
+CLAUDE.md
